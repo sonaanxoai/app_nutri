@@ -1,0 +1,295 @@
+1. Tạo file screens/profile_screen.dart
+Bạn copy toàn bộ mã dưới đây và tạo file mới nhé:
+
+Dart
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  // Trạng thái Form
+  String _gender = 'Nam';
+  String _goal = 'Tăng cân';
+  final TextEditingController _heightCtrl = TextEditingController(text: '170');
+  final TextEditingController _weightCtrl = TextEditingController(text: '58');
+  final TextEditingController _budgetCtrl = TextEditingController(text: '400.000');
+  final TextEditingController _ingredientsCtrl = TextEditingController(text: 'Ức gà, rau xanh, gạo, gia vị cơ bản');
+
+  bool _isLoading = false;
+  String? _aiPlanResult;
+
+  // Giả lập gọi API AI sinh kế hoạch
+  Future<void> _generatePlan() async {
+    setState(() {
+      _isLoading = true;
+      _aiPlanResult = null;
+    });
+
+    // Giả lập delay của mạng/AI
+    await Future.delayed(const Duration(seconds: 3));
+
+    setState(() {
+      _isLoading = false;
+      // Trả về kết quả AI giả lập cực kỳ sát với yêu cầu của Thông
+      _aiPlanResult = """
+🎯 KẾ HOẠCH DINH DƯỠNG (Mục tiêu: TĂNG CÂN)
+
+💰 Ngân sách tuần: ${_budgetCtrl.text} VNĐ
+🛒 Phân bổ đi chợ thông minh:
+• Ức gà (2.5kg): ~150k (Nguồn đạm chính)
+• Trứng gà (20 quả): ~55k (Đạm rẻ, dễ tiêu hóa)
+• Gạo tẻ & Khoai lang: ~60k (Nguồn Carb chính)
+• Rau củ theo mùa (bắp cải, mồng tơi): ~50k
+• Gia vị (Nước mắm, tiêu, hành tỏi, bột năng): ~85k
+
+🍳 CÁCH CHẾ BIẾN ỨC GÀ KHÔNG BỊ NGÁN & KHÔ:
+Món đinh: Chả ức gà viên áp chảo.
+• Cách làm: Xay hoặc băm nhuyễn ức gà. Bí quyết để không khô là trộn thêm 1 quả trứng, một ít mộc nhĩ/nấm hương (nếu có), hành tím băm nhỏ, và 1 thìa bột năng. 
+• Nếu xin được cô bán thịt lợn một chút mỡ phần băm cùng thì chả sẽ cực kỳ mềm mọng. Nặn viên dẹt và áp chảo với xíu dầu ăn.
+
+🍚 ĐỊNH LƯỢNG CARB ĐỂ TĂNG CÂN:
+Để tăng cân, bạn bắt buộc phải dư thừa Calo. Ức gà chỉ cung cấp Đạm, nên Carb là yếu tố quyết định:
+• Bữa sáng: 1 bát phở/bún hoặc 2 củ khoai lang + 2 quả trứng luộc.
+• Bữa trưa: Bắt buộc ăn 3 bát cơm đầy + 150g chả ức gà + 1 bát canh rau.
+• Bữa tối: Ăn 2 đến 3 bát cơm + 150g ức gà xào/luộc + rau.
+• Phụ (nếu đói): Ăn thêm 1-2 quả chuối chín (rất rẻ và dồi dào năng lượng).
+""";
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAF9),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text("Hồ sơ & Kế hoạch", style: GoogleFonts.outfit(color: const Color(0xFF2D312F), fontSize: 24, fontWeight: FontWeight.bold)),
+        centerTitle: false,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildProfileHeader(),
+            const SizedBox(height: 24),
+            _buildMetricsSection(),
+            const SizedBox(height: 24),
+            _buildGoalsSection(),
+            const SizedBox(height: 24),
+            _buildBudgetSection(),
+            const SizedBox(height: 32),
+            _buildGenerateButton(),
+            const SizedBox(height: 32),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator(color: Color(0xFF8CE3BE)))
+            else if (_aiPlanResult != null)
+              _buildAIResultCard(),
+            const SizedBox(height: 80), // Cách lề dưới cùng
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    return Row(
+      children: [
+        Container(
+          width: 70, height: 70,
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFF8CE3BE), width: 3), image: const DecorationImage(image: NetworkImage('https://i.pravatar.cc/150?img=11'), fit: BoxFit.cover)),
+        ),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Vũ Đức Thông', style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF2D312F))),
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(color: const Color(0xFF8CE3BE).withOpacity(0.2), borderRadius: BorderRadius.circular(8)),
+              child: const Text('Sinh viên', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32))),
+            )
+          ],
+        )
+      ],
+    );
+  }
+
+  Widget _buildMetricsSection() {
+    return Row(
+      children: [
+        Expanded(child: _buildInputField("Chiều cao (cm)", _heightCtrl, Icons.height)),
+        const SizedBox(width: 16),
+        Expanded(child: _buildInputField("Cân nặng (kg)", _weightCtrl, Icons.monitor_weight_outlined)),
+      ],
+    );
+  }
+
+  Widget _buildGoalsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Mục tiêu & Giới tính", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildChoiceChip("Nam", _gender == "Nam", () => setState(() => _gender = "Nam")),
+            const SizedBox(width: 10),
+            _buildChoiceChip("Nữ", _gender == "Nữ", () => setState(() => _gender = "Nữ")),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _buildChoiceChip("Giảm cân", _goal == "Giảm cân", () => setState(() => _goal = "Giảm cân")),
+            const SizedBox(width: 10),
+            _buildChoiceChip("Giữ dáng", _goal == "Giữ dáng", () => setState(() => _goal = "Giữ dáng")),
+            const SizedBox(width: 10),
+            _buildChoiceChip("Tăng cân", _goal == "Tăng cân", () => setState(() => _goal = "Tăng cân")),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBudgetSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Thiết lập thực đơn", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 12),
+        _buildInputField("Ngân sách 1 tuần (VNĐ)", _budgetCtrl, Icons.account_balance_wallet_outlined),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _ingredientsCtrl,
+          maxLines: 2,
+          decoration: InputDecoration(
+            labelText: "Nguyên liệu đang có / Ưa thích",
+            labelStyle: const TextStyle(color: Colors.grey),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+            prefixIcon: const Icon(Icons.shopping_basket_outlined, color: Color(0xFF8CE3BE)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChoiceChip(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF8CE3BE) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: isSelected ? Colors.transparent : Colors.grey.shade300),
+          boxShadow: isSelected ? [BoxShadow(color: const Color(0xFF8CE3BE).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
+        ),
+        child: Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _buildInputField(String label, TextEditingController controller, IconData icon) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        prefixIcon: Icon(icon, color: const Color(0xFF8CE3BE)),
+      ),
+    );
+  }
+
+  Widget _buildGenerateButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: _generatePlan,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2D312F),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 4,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.auto_awesome_rounded, color: Color(0xFF8CE3BE)),
+            const SizedBox(width: 8),
+            Text("TẠO KẾ HOẠCH BẰNG AI", style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAIResultCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFF8CE3BE), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF8CE3BE).withOpacity(0.15), blurRadius: 20, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: const Color(0xFFE8F5E9), shape: BoxShape.circle),
+                child: const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFF4CAF50)),
+              ),
+              const SizedBox(width: 12),
+              Text("Gợi ý từ VinNutri AI", style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32))),
+            ],
+          ),
+          const Divider(height: 30, color: Color(0xFFE0E0E0)),
+          Text(
+            _aiPlanResult!,
+            style: const TextStyle(fontSize: 14, height: 1.6, color: Color(0xFF424242)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+2. Sửa file main.dart để kết nối màn hình Hồ sơ
+Vào file main.dart của bạn, thêm import:
+
+Dart
+import 'screens/profile_screen.dart'; // Thêm dòng này
+Và ở biến IndexedStack trong hàm build của _MainLayoutState, bạn thay thế dòng placeholder của index số 4:
+
+Dart
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          DashboardScreen(...), 
+          FitnessScreen(...), 
+          FoodSnapperScreen(...), 
+          HistoryScreen(history: _history), 
+          const ProfileScreen(), // Đổi dòng const Center(child: Text("Hồ sơ"...)) thành dòng này
+        ],
+      ),

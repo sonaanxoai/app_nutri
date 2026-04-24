@@ -1,0 +1,97 @@
+Dưới đây là 2 bước đơn giản để biến dữ liệu giả lập thành dữ liệu AI thật:
+
+Bước 1: Thêm hàm generateDietPlan vào gemini_service.dart
+Bạn mở file gemini_service.dart lên và dán hàm này vào bên trong class GeminiService (có thể để ngay dưới hàm analyzeFood). Mình đã viết sẵn logic tạo prompt chi tiết và sử dụng lại cơ chế fallback đổi model rất xịn của bạn:
+
+Dart
+  // Hàm sinh kế hoạch dinh dưỡng cá nhân hóa
+  Future<String> generateDietPlan(String height, String weight, String budget, String ingredients, String goal) async {
+    // 1. Tạo câu lệnh (prompt) chi tiết ép AI đóng vai chuyên gia
+    final prompt = """
+Bạn là một chuyên gia dinh dưỡng thực tế, thấu hiểu tâm lý và tài chính của sinh viên.
+Hãy lập một kế hoạch ăn uống và đi chợ chi tiết dựa trên các thông tin sau:
+- Chiều cao: $height cm
+- Cân nặng: $weight kg
+- Mục tiêu: $goal
+- Ngân sách 1 tuần: $budget VNĐ
+- Nguyên liệu đang có / Ưa thích: $ingredients
+
+Yêu cầu định dạng đầu ra (Trình bày đẹp, dùng emoji, không trả về định dạng markdown code block json):
+1. Đánh giá nhanh: Chỉ số BMI hiện tại và lượng Calo/ngày cần thiết để đạt mục tiêu.
+2. Kế hoạch đi chợ (Ngân sách $budget): Phân bổ tiền mua thực phẩm thật chi tiết, ưu tiên rẻ mà chất.
+3. Bí quyết nấu ăn: Hướng dẫn cách chế biến $ingredients ngon, không bị khô/ngán.
+4. Định lượng cụ thể: Bữa sáng/trưa/tối cần ăn chính xác bao nhiêu bát cơm, bao nhiêu gram thịt để đạt mục tiêu "$goal".
+""";
+
+    String? lastError;
+
+    // 2. Gọi API với cơ chế dự phòng (fallback) các model
+    for (String modelName in _models) {
+      try {
+        final model = GenerativeModel(
+          model: modelName,
+          apiKey: _apiKey,
+        );
+
+        // Sinh text thông thường (không ép JSON như analyzeFood)
+        final response = await model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 45));
+        
+        if (response.text != null && response.text!.isNotEmpty) {
+          return response.text!.trim();
+        }
+      } catch (e) {
+        lastError = e.toString();
+        print("Model $modelName gặp lỗi khi tạo kế hoạch: $e");
+        continue; 
+      }
+    }
+
+    throw Exception("Lỗi hệ thống AI: $lastError");
+  }
+Bước 2: Sửa lại nút bấm trong profile_screen.dart
+Giờ bạn mở file profile_screen.dart lên.
+Đầu tiên, import GeminiService ở trên cùng:
+
+Dart
+import '../services/gemini_service.dart'; // Đảm bảo đường dẫn đúng
+Sau đó, tìm hàm _generatePlan() và thay thế toàn bộ bằng mã này để nó gọi API thật, có hiệu ứng loading đàng hoàng và bắt lỗi nếu rớt mạng:
+
+Dart
+  // Khởi tạo service
+  final GeminiService _geminiService = GeminiService();
+
+  Future<void> _generatePlan() async {
+    // Tắt bàn phím khi bấm nút
+    FocusScope.of(context).unfocus();
+    
+    setState(() {
+      _isLoading = true;
+      _aiPlanResult = null;
+    });
+
+    try {
+      // Gọi AI thật
+      final result = await _geminiService.generateDietPlan(
+        _heightCtrl.text,
+        _weightCtrl.text,
+        _budgetCtrl.text,
+        _ingredientsCtrl.text,
+        _goal,
+      );
+
+      if (mounted) {
+        setState(() {
+          _aiPlanResult = result;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _aiPlanResult = "⚠️ Ôi hỏng! AI đang quá tải hoặc rớt mạng. Chi tiết lỗi:\n$e";
+        });
+      }
+    }
+  }
+Vậy là xong! Giờ đây khi bạn nhập "400.000", "Ức gà", "Tăng cân"... AI sẽ tự tính toán BMI, chia số tiền 400k ra xem mua được bao nhiêu kg ức gà, bao nhiêu trứng, và dặn bạn ăn mấy bát cơm một bữa dựa trên thuật toán thực tế của nó. Cực kỳ xịn xò!

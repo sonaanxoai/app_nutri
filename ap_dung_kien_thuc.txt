@@ -1,0 +1,22 @@
+Mình đã xem qua danh mục slide và hiểu "gu" dạy của cô rồi. Dù các slide có tên truyền thống (như SQLite, Thread...), nhưng thực tế cô muốn bạn hiểu bản chất để có thể nắm bắt cái mới nhanh.
+
+Để app của bạn vừa "xịn" (dùng công nghệ mới nhất 2026) vừa "đúng ý cô", mình sẽ áp dụng chiến thuật "Bình mới rượu cũ" như sau:
+
+🌟 Những "kiến thức hay" của cô sẽ được hiện đại hóa thế nào?
+Kiến thức cô dạy (Slide)	Công nghệ "Xịn" mình sẽ dùng	Tại sao cô sẽ chấm điểm cao?
+02 - Lifecycle	Lifecycle-aware Components	Bạn xử lý Camera tự động bật/tắt đúng lúc, không làm crash app.
+09 - SQLite	Room Persistence Library	Room thực chất là "vỏ bọc" cho SQLite. Bạn dùng Room để lưu History Calo sẽ chuyên nghiệp hơn dùng SQLite thuần rất nhiều.
+10 - Threading	Kotlin Coroutines / Flow	Thay vì AsyncTask cũ kỹ, mình dùng Coroutines để gọi Gemini API. Đây là đỉnh cao xử lý bất đồng bộ hiện nay.
+11 - Notification	Custom Notification Channel	Hiện notification "xịn" có nút bấm điều khiển ngay cả khi máy khóa (đúng bài Slide 11).
+14 - Web Services	Retrofit + Moshi/Gson	Kết nối Gemini API qua Retrofit. Đây là cách làm chuẩn mực của các senior hiện nay.
+🎯 Điểm nhấn "Pro" cho bài báo cáo:
+Cô dạy về ConstraintLayout (Slide 04), nhưng mình sẽ nâng cấp lên Jetpack Compose (Declarative UI). Khi báo cáo, bạn chỉ cần nói: "Em đã tìm hiểu thêm về Compose để tối ưu việc xử lý Event Handling (Slide 04) và Custom UI cho Dashboard dinh dưỡng".
+
+🛠️ Ok, mình bắt đầu "đổ" code Android xuống nhé!
+Mình sẽ tạo một thư mục cấu trúc MVVM (Model-View-ViewModel) - kiến trúc chuẩn nhất để cô thấy bạn có đầu tư nghiên cứu sâu.
+
+Bắt đầu với 2 file quan trọng nhất để khởi động App:
+
+build.gradle.kts: Setup toàn bộ "đồ chơi" (Gemini, Room, Google Maps).
+NutriApp.kt: Khởi tạo Application.
+Package Name chốt là com.vin.nutrifit nhé? Nếu bạn gật đầu, mình sẽ tạo file đầu tiên ngay

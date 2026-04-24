@@ -1,0 +1,82 @@
+Dưới đây là mã cập nhật để triển khai tính năng này vào ứng dụng của bạn.
+
+1. Cập nhật GeminiService (gemini_service.dart)
+Thêm hàm để AI phân tích nhanh tình trạng dinh dưỡng dựa trên món ăn vừa ăn và mục tiêu cá nhân.
+
+Dart
+  // Hàm nhận lời khuyên nhanh (ngắn gọn)
+  Future<String> getQuickAdvice(String foodName, num foodCarbs, String goal) async {
+    final prompt = "Tôi vừa ăn $foodName có $foodCarbs g Carb. Mục tiêu của tôi là $goal. Hãy cho tôi 1 lời khuyên cực kỳ ngắn gọn (dưới 30 từ) về việc cần nạp thêm bao nhiêu Carb nữa trong ngày hôm nay và nên ăn gì.";
+    
+    try {
+      final model = GenerativeModel(model: _models.first, apiKey: _apiKey);
+      final response = await model.generateContent([Content.text(prompt)]);
+      return response.text?.trim() ?? "Hãy tiếp tục theo dõi thực đơn nhé!";
+    } catch (e) {
+      return "Cố gắng nạp đủ Carb để đạt mục tiêu $goal bạn nhé!";
+    }
+  }
+2. Cập nhật giao diện camera_screen.dart
+Trong hàm _buildDraggableResultSheet, chúng ta sẽ thêm nút (i) nhỏ cạnh chỉ số Carb.
+
+Dart
+  // Trong widget _nutrientStat, thêm icon nút info
+  Widget _nutrientStat(String label, String value, String unit, Color color, {VoidCallback? onTap}) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Text(label, style: const TextStyle(color: Color(0xFF5A5F5D), fontSize: 12)),
+            if (onTap != null)
+              GestureDetector(
+                onTap: onTap,
+                child: Padding(
+                  padding: const EdgeInsets.left(4.0),
+                  child: Icon(Icons.info_outline, size: 14, color: color.withOpacity(0.6)),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(value, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: color)),
+        Text(unit, style: TextStyle(fontSize: 10, color: color.withOpacity(0.7), fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  // Cập nhật phần hiển thị Nutrients trong DraggableSheet:
+  // ...
+  _nutrientStat('Carb', '${_analysisResults!['carbs']}', 'g', const Color(0xFF0277BD), onTap: () async {
+    // Hiển thị một Dialog hoặc SnackBar nhanh
+    final advice = await _geminiService.getQuickAdvice(
+      _analysisResults!['name'], 
+      num.tryParse(_analysisResults!['carbs'].toString()) ?? 0,
+      "Tăng cân" // Bạn có thể truyền biến goal từ Profile vào đây
+    );
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.tips_and_updates, color: Color(0xFF8CE3BE)),
+            SizedBox(width: 8),
+            Text("Lời khuyên nhanh"),
+          ],
+        ),
+        content: Text(advice),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Đã hiểu")),
+        ],
+      ),
+    );
+  }),
+  // ...
+Để giúp bạn hiểu rõ hơn về cách tính toán lượng Carb cần nạp thêm cho một sinh viên nặng 58kg với mục tiêu tăng cân, hãy tham khảo bảng tính toán thông minh dưới đây. Nó sẽ giúp bạn thấy rõ khoảng trống dinh dưỡng cần lấp đầy sau mỗi bữa ăn.
+
+
+Cho tôi xem hình ảnh trực quan
+
+
+Với tính năng này, sau khi chụp bát Phở (khoảng 60g Carb), bạn nhấn vào nút (i), hệ thống sẽ báo ngay: "Bạn cần khoảng 290g Carb nữa. Hãy nạp thêm khoảng 6 bát cơm trong các bữa còn lại để đạt cân nặng mục tiêu!". Chúc bạn sớm đạt được vóc dáng mong muốn!

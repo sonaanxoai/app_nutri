@@ -1,0 +1,365 @@
+main.dart
+import 'package:flutter/material.dart';
+import '../models/food_item.dart';
+
+class DashboardScreen extends StatelessWidget {
+  final List<FoodItem> history;
+  const DashboardScreen({super.key, required this.history});
+
+  static const Color mintGreen = Color(0xFF8CE3BE);
+  static const Color mintLight = Color(0xFFD8F5E9);
+  static const Color pastelHighlight = Color(0xFFFFE082); // Vàng cho nạp calo
+  static const Color lightBackground = Color(0xFFF4F9F6);
+  static const Color darkText = Color(0xFF2D312F);
+  static const Color mediumText = Color(0xFF757D7A);
+  static const Color fireOrange = Color(0xFFFF8A65); // Cam cho đốt calo
+
+  @override
+  Widget build(BuildContext context) {
+    // Tính tổng calo hôm nay
+    final num todayCalories = history.fold(0, (sum, item) => sum + item.calories);
+    const int goalCalories = 2000;
+    
+    // Giả lập số calo tiêu hao do đi bộ (có thể lấy từ FitnessScreen sang sau này)
+    const int burnedCalories = 320; 
+
+    return Scaffold(
+      backgroundColor: lightBackground,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 24),
+              _buildTodaySummary(todayCalories, goalCalories, burnedCalories),
+              const SizedBox(height: 24),
+              _buildWeeklyChart(),
+              const SizedBox(height: 24),
+              _buildRecentHistory(),
+              const SizedBox(height: 80),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'VinNutri AI',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                color: darkText,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              'Chào Thông!',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: mediumText,
+              ),
+            ),
+          ],
+        ),
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: mintGreen, width: 2),
+            image: const DecorationImage(
+              image: NetworkImage('https://i.pravatar.cc/150?img=11'),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTodaySummary(num current, int goal, int burned) {
+    double progress = current / goal;
+    if (progress > 1.0) progress = 1.0;
+
+    return _buildCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Hôm nay',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$current',
+                style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: darkText),
+              ),
+              Text(
+                ' / $goal kcal',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: mediumText),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Thanh tiến độ nạp Calo
+          Stack(
+            children: [
+              Container(
+                height: 14,
+                decoration: BoxDecoration(color: mintLight, borderRadius: BorderRadius.circular(7)),
+              ),
+              FractionallySizedBox(
+                widthFactor: progress,
+                child: Container(
+                  height: 14,
+                  decoration: BoxDecoration(color: pastelHighlight, borderRadius: BorderRadius.circular(7)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Dòng hiển thị Calo đã tiêu hao do vận động
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: fireOrange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.local_fire_department_rounded, color: fireOrange, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Đã vận động tiêu hao: ',
+                  style: TextStyle(fontSize: 14, color: darkText.withOpacity(0.8), fontWeight: FontWeight.w500),
+                ),
+                Text(
+                  '$burned kcal',
+                  style: const TextStyle(fontSize: 15, color: fireOrange, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklyChart() {
+    // Dữ liệu mẫu: valueConsumed (tỷ lệ nạp), valueBurned (tỷ lệ tiêu hao)
+    final weeklyData = [
+      {'day': 'T2', 'valueConsumed': 0.5, 'valueBurned': 0.3, 'isToday': false},
+      {'day': 'T3', 'valueConsumed': 0.7, 'valueBurned': 0.4, 'isToday': false},
+      {'day': 'T4', 'valueConsumed': 0.9, 'valueBurned': 0.6, 'isToday': true}, // Hôm nay
+      {'day': 'T5', 'valueConsumed': 0.6, 'valueBurned': 0.2, 'isToday': false},
+      {'day': 'T6', 'valueConsumed': 0.8, 'valueBurned': 0.5, 'isToday': false},
+      {'day': 'T7', 'valueConsumed': 0.0, 'valueBurned': 0.0, 'isToday': false},
+      {'day': 'CN', 'valueConsumed': 0.0, 'valueBurned': 0.0, 'isToday': false},
+    ];
+
+    return _buildCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Thống kê tuần này',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText),
+              ),
+              // Chú thích màu sắc (Legend)
+              Row(
+                children: [
+                  _buildLegendItem("Nạp", pastelHighlight),
+                  const SizedBox(width: 10),
+                  _buildLegendItem("Đốt", mintGreen),
+                ],
+              )
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 130,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: weeklyData.map((data) {
+                final double consumed = data['valueConsumed'] as double;
+                final double burned = data['valueBurned'] as double;
+                final bool isToday = data['isToday'] as bool;
+                final String day = data['day'] as String;
+
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Cột Biểu Đồ Kép
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        // Cột Vàng (Nạp vào)
+                        Container(
+                          width: 10,
+                          height: consumed == 0 ? 0 : 90 * consumed,
+                          decoration: BoxDecoration(
+                            color: pastelHighlight,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(width: 3), // Khoảng cách giữa 2 cột
+                        // Cột Xanh (Tiêu hao)
+                        Container(
+                          width: 10,
+                          height: burned == 0 ? 0 : 90 * burned,
+                          decoration: BoxDecoration(
+                            color: mintGreen,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Khung trống nếu chưa có data
+                    if (consumed == 0 && burned == 0)
+                      Container(
+                        width: 23,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: mintLight, width: 1.5),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    Text(
+                      day,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                        color: isToday ? darkText : mediumText,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 11, color: mediumText, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildRecentHistory() {
+    // Lấy 3 món gần nhất
+    final recentItems = history.take(3).toList();
+
+    return _buildCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Lịch sử gần đây',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText),
+          ),
+          const SizedBox(height: 16),
+          if (recentItems.isEmpty)
+             const Text("Chưa có lịch sử.", style: TextStyle(color: mediumText))
+          else
+            ...recentItems.map((item) => _buildHistoryItem(
+                  name: item.name,
+                  calo: '${item.calories} kcal',
+                  time: 'Hôm nay',
+                  icon: Icons.fastfood,
+                )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryItem({required String name, required String calo, required String time, required IconData icon}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: lightBackground,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
+                ],
+              ),
+              child: Icon(icon, color: mintGreen, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
+                  const SizedBox(height: 4),
+                  Text(time, style: const TextStyle(fontSize: 13, color: mediumText)),
+                ],
+              ),
+            ),
+            Text(calo, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: darkText)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}

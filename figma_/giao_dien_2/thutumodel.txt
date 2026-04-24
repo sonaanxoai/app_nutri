@@ -1,0 +1,7 @@
+DANH SÁCH MODEL ƯU TIÊN (DÙNG CHO NHIỀU REQUEST / HIGH VOLUME)
+Ghi chú: TUYỆT ĐỐI KHÔNG DÙNG DÒNG PRO HOẶC 1.5
+
+1. gemini-2.5-flash-lite (Ưu tiên số 1 - Rất ổn định để scale)
+2. gemini-3-flash-preview (Ưu tiên số 2 - Thông minh & Tốc độ cao)
+3. gemini-3.1-flash-lite-preview (Ưu tiên số 3 - Siêu tiết kiệm chi phí)
+4. gemini-2.0-flash-lite (Ưu tiên số 4 - Đời cũ hơn nhưng chi phí cực thấp)

@@ -1,0 +1,408 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// --- MODEL DỮ LIỆU ---
+class WalkSession {
+  final DateTime date;
+  final int steps;
+  final double distanceKm;
+  final int calories;
+  final int durationMinutes;
+
+  WalkSession({
+    required this.date,
+    required this.steps,
+    required this.distanceKm,
+    required this.calories,
+    required this.durationMinutes,
+  });
+}
+
+class FitnessScreen extends StatefulWidget {
+  const FitnessScreen({super.key});
+
+  @override
+  State<FitnessScreen> createState() => _FitnessScreenState();
+}
+
+class _FitnessScreenState extends State<FitnessScreen> with SingleTickerProviderStateMixin {
+  // Trạng thái chung
+  bool _isTracking = false;
+  int _stepGoal = 5000;
+
+  // Dữ liệu khi đang đi bộ (Live Tracking)
+  int _currentSteps = 0;
+  int _currentMinutes = 0;
+  
+  double get _currentDistance => (_currentSteps * 0.000762); // 1 bước ~ 0.762m
+  int get _currentCalories => (_currentSteps * 0.04).toInt(); // 1 bước ~ 0.04 calo
+
+  // Lịch sử đi bộ (Data mẫu)
+  final List<WalkSession> _history = [
+    WalkSession(date: DateTime.now().subtract(const Duration(days: 1)), steps: 4320, distanceKm: 3.29, calories: 172, durationMinutes: 45),
+    WalkSession(date: DateTime.now().subtract(const Duration(days: 2)), steps: 6100, distanceKm: 4.64, calories: 244, durationMinutes: 60),
+    WalkSession(date: DateTime.now().subtract(const Duration(days: 3)), steps: 2150, distanceKm: 1.63, calories: 86, durationMinutes: 20),
+  ];
+
+  // --- LOGIC XỬ LÝ ---
+
+  void _startWalking() {
+    setState(() {
+      _currentSteps = 0;
+      _currentMinutes = 0;
+      _isTracking = true;
+    });
+    _runMockTracking();
+  }
+
+  void _finishWalking() {
+    // Lưu vào lịch sử nếu có đi bộ
+    if (_currentSteps > 0) {
+      setState(() {
+        _history.insert(0, WalkSession(
+          date: DateTime.now(),
+          steps: _currentSteps,
+          distanceKm: _currentDistance,
+          calories: _currentCalories,
+          durationMinutes: _currentMinutes == 0 ? 1 : _currentMinutes, // Tối thiểu 1 phút
+        ));
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('🎉 Tuyệt vời! Bạn vừa hoàn thành $_currentSteps bước.'),
+          backgroundColor: const Color(0xFF2E7D32),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+    
+    // Quay về màn hình chính
+    setState(() {
+      _isTracking = false;
+    });
+  }
+
+  // Giả lập bước chân tăng lên khi bấm Bắt đầu
+  void _runMockTracking() async {
+    while (_isTracking) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (!mounted || !_isTracking) break;
+      setState(() {
+        _currentSteps += 15; // Mỗi nhịp cộng 15 bước cho nhanh (demo)
+        if (_currentSteps % 100 == 0) _currentMinutes++; 
+      });
+    }
+  }
+
+  // Format ngày tháng cơ bản
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    if (date.year == now.year && date.month == now.month && date.day == now.day) {
+      return "Hôm nay, ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+    } else if (date.year == now.year && date.month == now.month && date.day == now.day - 1) {
+      return "Hôm qua";
+    }
+    return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+  }
+
+  // Thiết lập lại mục tiêu
+  void _showGoalDialog() {
+    TextEditingController ctrl = TextEditingController(text: _stepGoal.toString());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text("Mục tiêu bước đi", style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: "VD: 10000",
+            filled: true,
+            fillColor: const Color(0xFFF0F4F2),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Hủy", style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _stepGoal = int.tryParse(ctrl.text) ?? 5000;
+              });
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8CE3BE), foregroundColor: Colors.white),
+            child: const Text("Lưu"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- GIAO DIỆN (UI) ---
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAF9),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          _isTracking ? "Đang đi bộ..." : "Vận động", 
+          style: GoogleFonts.outfit(color: const Color(0xFF2D312F), fontSize: 26, fontWeight: FontWeight.bold)
+        ),
+        centerTitle: false,
+      ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 500),
+        child: _isTracking ? _buildTrackingView() : _buildOverviewView(),
+      ),
+    );
+  }
+
+  // 1. MÀN HÌNH TỔNG QUAN (Chưa bắt đầu)
+  Widget _buildOverviewView() {
+    return Column(
+      key: const ValueKey("Overview"),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Thẻ Thiết lập & Bắt đầu
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF8CE3BE), Color(0xFF67C29E)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(color: const Color(0xFF8CE3BE).withOpacity(0.4), blurRadius: 20, offset: const Offset(0, 10)),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Mục tiêu hôm nay", style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w500)),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text("$_stepGoal", style: GoogleFonts.outfit(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900)),
+                            const SizedBox(width: 4),
+                            Text("bước", style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                      onPressed: _showGoalDialog,
+                      style: IconButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.2)),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _startWalking,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF2D312F),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.directions_walk_rounded, color: Color(0xFF67C29E)),
+                        const SizedBox(width: 10),
+                        Text("BẮT ĐẦU ĐI BỘ", style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 30),
+
+        // Tiêu đề Lịch sử
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Text("Lịch sử đi bộ", style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800, color: const Color(0xFF2D312F))),
+        ),
+        const SizedBox(height: 16),
+
+        // Danh sách Lịch sử
+        Expanded(
+          child: _history.isEmpty 
+          ? Center(child: Text("Chưa có dữ liệu vận động.", style: TextStyle(color: Colors.grey.shade500)))
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              itemCount: _history.length,
+              itemBuilder: (context, index) {
+                final session = _history[index];
+                return _buildHistoryCard(session);
+              },
+            ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHistoryCard(WalkSession session) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 54, width: 54,
+            decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(16)),
+            child: const Icon(Icons.route_rounded, color: Color(0xFF4CAF50), size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_formatDate(session.date), style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF2D312F))),
+                const SizedBox(height: 4),
+                Text("${session.distanceKm.toStringAsFixed(2)} km • ${session.calories} kcal", style: GoogleFonts.outfit(fontSize: 14, color: const Color(0xFF757D7A))),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text("${session.steps}", style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w900, color: const Color(0xFF8CE3BE))),
+              Text("bước", style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF757D7A))),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  // 2. MÀN HÌNH ĐANG ĐI BỘ (Live Tracking)
+  Widget _buildTrackingView() {
+    double progress = _currentSteps / _stepGoal;
+    if (progress > 1.0) progress = 1.0;
+
+    return Padding(
+      key: const ValueKey("Tracking"),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const SizedBox(height: 20),
+          // Vòng Ring Tracking
+          Center(
+            child: Container(
+              width: 280, height: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle, color: Colors.white,
+                boxShadow: [BoxShadow(color: const Color(0xFF8CE3BE).withOpacity(0.15), blurRadius: 30, spreadRadius: 10)],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(width: 250, height: 250, child: CircularProgressIndicator(value: 1.0, strokeWidth: 18, color: const Color(0xFFF0F4F2))),
+                  SizedBox(width: 250, height: 250, child: CircularProgressIndicator(value: progress, strokeWidth: 18, backgroundColor: Colors.transparent, color: const Color(0xFF8CE3BE), strokeCap: StrokeCap.round)),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.directions_walk_rounded, color: Color(0xFF8CE3BE), size: 40),
+                      Text("$_currentSteps", style: GoogleFonts.outfit(fontSize: 56, fontWeight: FontWeight.w900, color: const Color(0xFF2D312F), height: 1.2)),
+                      Text("/ $_stepGoal", style: GoogleFonts.outfit(color: const Color(0xFF757D7A), fontSize: 18, fontWeight: FontWeight.w600)),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+          
+          // Thông số Live
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildMetricCard(Icons.local_fire_department_rounded, "$_currentCalories", "Kcal", const Color(0xFFFF8A65)),
+              _buildMetricCard(Icons.map_rounded, _currentDistance.toStringAsFixed(2), "Km", const Color(0xFF4FC3F7)),
+              _buildMetricCard(Icons.timer_rounded, "$_currentMinutes", "Phút", const Color(0xFFBA68C8)),
+            ],
+          ),
+          
+          const Spacer(),
+          
+          // Nút Kết thúc
+          SizedBox(
+            width: double.infinity, height: 68,
+            child: ElevatedButton(
+              onPressed: _finishWalking,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFF5252), // Màu đỏ nổi bật để Dừng
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                elevation: 8,
+                shadowColor: const Color(0xFFFF5252).withOpacity(0.5)
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.stop_circle_rounded, size: 28),
+                  const SizedBox(width: 8),
+                  Text("KẾT THÚC", style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(IconData icon, String value, String unit, Color color) {
+    return Container(
+      width: MediaQuery.of(context).size.width * 0.26,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white, borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        children: [
+          Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle), child: Icon(icon, color: color, size: 26)),
+          const SizedBox(height: 16),
+          Text(value, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: const Color(0xFF2D312F))),
+          Text(unit, style: GoogleFonts.outfit(color: const Color(0xFF757D7A), fontSize: 13, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+}

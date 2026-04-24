@@ -1,0 +1,38 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    
+    // 🔥 TIÊM THUỘC TÍNH FLUTTER CHO CÁC PLUGIN (Sửa lỗi Unknown property flutter)
+    project.ext {
+        flutter = [
+            compileSdkVersion: 34,
+            minSdkVersion: 21,
+            targetSdkVersion: 34
+        ]
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.extensions.findByName('android') != null) {
+            project.android {
+                compileSdk = 34
+                buildToolsVersion = "34.0.0"
+                defaultConfig {
+                    targetSdk = 34
+                }
+            }
+        }
+    }
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

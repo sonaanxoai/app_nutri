@@ -1,0 +1,181 @@
+Để làm cho phần Kế hoạch AI này trở nên "VIP", dễ đọc và có các thẻ thu gọn (Accordion/ExpansionTile), giải pháp xịn nhất là: Ép AI trả về dữ liệu dạng JSON có cấu trúc, sau đó dùng Flutter để vẽ các thẻ thu gọn tuyệt đẹp.
+
+Dưới đây là 2 bước nâng cấp toàn diện:
+
+Bước 1: Ép AI trả về JSON (Sửa gemini_service.dart)
+Mở file gemini_service.dart, tìm đến hàm generateDietPlan và sửa lại toàn bộ hàm này như sau. Việc thêm responseMimeType: 'application/json' sẽ đảm bảo AI trả về chuẩn cấu trúc để ta vẽ giao diện.
+
+Dart
+  // Hàm sinh kế hoạch dinh dưỡng cá nhân hóa (Đã nâng cấp trả về JSON)
+  Future<Map<String, dynamic>> generateDietPlan(String height, String weight, String budget, String ingredients, String goal) async {
+    final prompt = """
+Bạn là một chuyên gia dinh dưỡng thực tế cho sinh viên.
+Dựa vào: Cao $height cm, Nặng $weight kg, Mục tiêu: $goal, Ngân sách tuần: $budget VNĐ, Nguyên liệu có: $ingredients.
+
+Hãy trả về DUY NHẤT một mã JSON theo đúng định dạng sau (không markdown, không giải thích thêm):
+{
+  "intro": "Lời chào và động viên ngắn gọn (khoảng 3-4 câu).",
+  "sections": [
+    {
+      "icon": "📊",
+      "title": "Đánh giá nhanh & Mục tiêu Calo",
+      "content": "Chi tiết đánh giá BMI và lượng calo cần thiết..."
+    },
+    {
+      "icon": "🛒",
+      "title": "Kế hoạch đi chợ ($budget)",
+      "content": "Phân bổ chi tiết số tiền mua thực phẩm..."
+    },
+    {
+      "icon": "🍳",
+      "title": "Bí quyết nấu ăn ngon rẻ",
+      "content": "Cách chế biến không bị khô, ngán..."
+    },
+    {
+      "icon": "🍚",
+      "title": "Định lượng chi tiết các bữa",
+      "content": "Cụ thể cần ăn mấy bát cơm, bao nhiêu gram thịt..."
+    }
+  ]
+}
+""";
+
+    String? lastError;
+
+    for (String modelName in _models) {
+      try {
+        final model = GenerativeModel(
+          model: modelName,
+          apiKey: _apiKey,
+          // Ép AI trả về JSON chuẩn
+          generationConfig: GenerationConfig(responseMimeType: 'application/json'),
+        );
+
+        final response = await model.generateContent([Content.text(prompt)]).timeout(const Duration(seconds: 45));
+        
+        if (response.text != null && response.text!.isNotEmpty) {
+          String cleanJson = response.text!.replaceAll('```json', '').replaceAll('```', '').trim();
+          return jsonDecode(cleanJson) as Map<String, dynamic>;
+        }
+      } catch (e) {
+        lastError = e.toString();
+        print("Model $modelName gặp lỗi: $e");
+        continue; 
+      }
+    }
+
+    throw Exception("Lỗi hệ thống AI: $lastError");
+  }
+Bước 2: Vẽ giao diện Thẻ thu gọn (Sửa profile_screen.dart)
+Bây giờ, mở profile_screen.dart lên.
+
+Đổi biến lưu kết quả từ String sang Map:
+Thay dòng String? _aiPlanResult; thành Map<String, dynamic>? _aiPlanResult;
+
+Kéo xuống thay thế hàm _buildAIResultCard() bằng đoạn mã này. Nó sẽ dùng ExpansionTile để tạo các thẻ có thể bấm mở ra/thu vào cực kỳ gọn gàng, có icon và màu sắc bo góc xịn xò.
+
+Dart
+  Widget _buildAIResultCard() {
+    // Nếu có lỗi (lưu dạng Map với key 'error')
+    if (_aiPlanResult!.containsKey('error')) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(20)),
+        child: Text(_aiPlanResult!['error'], style: const TextStyle(color: Colors.red)),
+      );
+    }
+
+    final intro = _aiPlanResult!['intro'] ?? '';
+    final List<dynamic> sections = _aiPlanResult!['sections'] ?? [];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFF8CE3BE).withOpacity(0.15), blurRadius: 25, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: const BoxDecoration(color: Color(0xFFE8F5E9), shape: BoxShape.circle),
+                child: const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFF4CAF50), size: 28),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text("Kế hoạch từ VinNutri AI", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32))),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Đoạn mở đầu
+          Text(intro, style: const TextStyle(fontSize: 15, height: 1.5, color: Color(0xFF5A5F5D))),
+          const SizedBox(height: 24),
+
+          // Render danh sách các thẻ thu gọn (Expansion Panels)
+          ...sections.map((section) => _buildExpandableSection(
+            icon: section['icon'] ?? '✨',
+            title: section['title'] ?? 'Nội dung',
+            content: section['content'] ?? '',
+          )).toList(),
+        ],
+      ),
+    );
+  }
+
+  // Widget vẽ từng Thẻ thu gọn
+  Widget _buildExpandableSection({required String icon, required String title, required String content}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F9F6), // Màu nền xanh nhạt
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF8CE3BE).withOpacity(0.4)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent), // Bỏ đường gạch chân mặc định
+        child: ExpansionTile(
+          collapsedIconColor: const Color(0xFF2D312F),
+          iconColor: const Color(0xFF4CAF50),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
+          title: Row(
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title, 
+                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: const Color(0xFF2D312F)),
+                ),
+              ),
+            ],
+          ),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))]
+              ),
+              child: Text(
+                content,
+                style: const TextStyle(fontSize: 14, height: 1.6, color: Color(0xFF424242)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+Lưu ý nhỏ: Nhớ kiểm tra lại hàm _generatePlan() trong profile_screen.dart, lúc catch lỗi thì bạn gán _aiPlanResult = {'error': 'Chi tiết lỗi: $e'}; thay vì gán String như cũ nhé.

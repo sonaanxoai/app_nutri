@@ -67,13 +67,13 @@ lib/
 ## 📈 Screenshots
 
 ### Giao diện tổng quan
-![Giao diện tổng quan](images/overview.png)
+![Giao diện tổng quan](Image/img.png)
 
 ### Vận động đo sức khỏe
-![Vận động đo sức khỏe](images/fitness.png)
+![Vận động đo sức khỏe](Image/img_1.png)
 
 ### Hồ sơ kế hoạch
-![Hồ sơ kế hoạch](images/profile.png)
+![Hồ sơ kế hoạch](Image/img_2.png)
 
 ## 🤝 Đóng góp
 

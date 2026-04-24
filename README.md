@@ -66,7 +66,14 @@ lib/
 
 ## 📈 Screenshots
 
-*(Thêm hình ảnh demo ứng dụng ở đây)*
+### Giao diện tổng quan
+![Giao diện tổng quan](images/overview.png)
+
+### Vận động đo sức khỏe
+![Vận động đo sức khỏe](images/fitness.png)
+
+### Hồ sơ kế hoạch
+![Hồ sơ kế hoạch](images/profile.png)
 
 ## 🤝 Đóng góp
 

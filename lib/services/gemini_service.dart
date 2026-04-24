@@ -4,7 +4,6 @@ import 'dart:async';
 import 'dart:convert';
 
 class GeminiService {
-  // KHÔNG DÙNG 1.5 - THỬ DÙNG 1.0 PRO VISION (MODEL ĐỜI ĐẦU)
   static final List<String> _models = [
     'gemini-2.5-flash-lite',
     'gemini-3-flash-preview',

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart'; // Mở lại Geolocator
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 // --- MODEL DỮ LIỆU ---
 class WalkSession {
@@ -48,6 +49,13 @@ class _FitnessScreenState extends State<FitnessScreen> with SingleTickerProvider
   StreamSubscription<Position>? _positionStream;
   Position? _lastPosition;
 
+  // Map related
+  GoogleMapController? _mapController;
+  Set<Marker> _markers = {};
+  Set<Polyline> _polylines = {};
+  List<LatLng> _path = [];
+  LatLng? _initialCameraPosition;
+
   double get _currentDistanceKm => _totalDistanceMeters / 1000.0;
   int get _currentCalories => (_currentSteps * 0.04).toInt();
 
@@ -78,6 +86,26 @@ class _FitnessScreenState extends State<FitnessScreen> with SingleTickerProvider
       }
     }
 
+    // Get initial position for map
+    if (!kIsWeb) {
+      try {
+        Position initialPosition = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+        setState(() {
+          _initialCameraPosition = LatLng(initialPosition.latitude, initialPosition.longitude);
+        });
+      } catch (e) {
+        debugPrint("Initial position error: $e");
+        // Default to Hanoi
+        setState(() {
+          _initialCameraPosition = const LatLng(21.0285, 105.8542);
+        });
+      }
+    } else {
+      setState(() {
+        _initialCameraPosition = const LatLng(21.0285, 105.8542);
+      });
+    }
+
     setState(() {
       _currentSteps = 0;
       _initialSteps = -1;
@@ -85,6 +113,9 @@ class _FitnessScreenState extends State<FitnessScreen> with SingleTickerProvider
       _totalDistanceMeters = 0.0;
       _lastPosition = null;
       _isTracking = true;
+      _path = [];
+      _markers = {};
+      _polylines = {};
     });
 
     // 🚀 Chế độ Web: Giả lập hoàn toàn
@@ -127,6 +158,18 @@ class _FitnessScreenState extends State<FitnessScreen> with SingleTickerProvider
             if (_currentSteps == 0 && _totalDistanceMeters > 0) {
               _currentSteps = (_totalDistanceMeters / 0.762).toInt();
             }
+            _path.add(LatLng(position.latitude, position.longitude));
+            _markers.add(Marker(
+              markerId: MarkerId(position.timestamp.toString()),
+              position: LatLng(position.latitude, position.longitude),
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+            ));
+            _polylines.add(Polyline(
+              polylineId: PolylineId(position.timestamp.toString()),
+              points: _path,
+              color: const Color(0xFF67C29E),
+              width: 5,
+            ));
           });
         }
         _lastPosition = position;
@@ -356,6 +399,44 @@ class _FitnessScreenState extends State<FitnessScreen> with SingleTickerProvider
              const SizedBox(width: 16),
              Expanded(child: _metric("THỜI GIAN", "$_currentMinutes", "PHÚT", Icons.timer_outlined)),
             ],
+          ),
+          const SizedBox(height: 24),
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [BoxShadow(color: const Color(0xFF8CE3BE).withOpacity(0.2), blurRadius: 30, spreadRadius: 5)],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: GoogleMap(
+                onMapCreated: (controller) {
+                  _mapController = controller;
+                  if (_initialCameraPosition != null) {
+                    _mapController!.animateCamera(CameraUpdate.newLatLngZoom(_initialCameraPosition!, 15));
+                  }
+                },
+                myLocationEnabled: true,
+                zoomControlsEnabled: false,
+                mapType: MapType.normal,
+                initialCameraPosition: CameraPosition(
+                  target: _initialCameraPosition ?? const LatLng(21.0285, 105.8542), // Giữ nguyên vị trí ban đầu
+                  zoom: 15,
+                ),
+                markers: _markers,
+                polylines: _polylines,
+                onCameraIdle: () {
+                  if (_mapController != null) {
+                    _mapController!.getVisibleRegion().then((bounds) {
+                      setState(() {
+                        _initialCameraPosition = LatLng(bounds.center.latitude, bounds.center.longitude);
+                      });
+                    });
+                  }
+                },
+              ),
+            ),
           ),
           const Spacer(),
           ElevatedButton(

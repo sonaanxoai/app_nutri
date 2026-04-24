@@ -1,16 +1,81 @@
-# app_
+# VinNutri AI
 
-A new Flutter project.
+Ứng dụng theo dõi dinh dưỡng và sức khỏe thông minh, được hỗ trợ bởi trí tuệ nhân tạo, chuyên dành cho món ăn Việt Nam.
 
-## Getting Started
+## 📱 Tính năng chính
 
-This project is a starting point for a Flutter application.
+- **📷 AI Snap**: Chụp ảnh món ăn → AI phân tích và tính toán calo, protein, chất béo, tinh bột tự động
+- **📊 Dashboard**: Theo dõi tổng quan calo nạp vào và đốt cháy trong ngày
+- **🏃‍♂️ Vận động**: Theo dõi bước chân và calo tiêu thụ khi đi bộ
+- **📜 Lịch sử**: Lưu trữ và xem lại các bữa ăn đã ghi nhận
+- **👤 Hồ sơ**: Quản lý thông tin cá nhân và mục tiêu sức khỏe
 
-A few resources to get you started if this is your first Flutter project:
+## 🛠️ Công nghệ sử dụng
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **Framework**: Flutter (Dart)
+- **AI Engine**: Google Gemini API (phân tích hình ảnh và lời khuyên dinh dưỡng)
+- **Camera**: Tích hợp camera để chụp ảnh thực phẩm
+- **Charts**: Fl Chart để hiển thị biểu đồ calo
+- **Storage**: Shared Preferences để lưu dữ liệu cục bộ
+- **Sensors**: Pedometer để theo dõi bước chân
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🚀 Cài đặt và chạy
+
+### Yêu cầu hệ thống
+- Flutter SDK >= 3.5.0
+- Dart SDK >= 3.5.0
+- Android Studio hoặc VS Code với Flutter extension
+
+### Các bước cài đặt
+1. Clone repository:
+   ```bash
+   git clone https://github.com/sonaanxoai/app_nutri.git
+   cd app_nutri
+   ```
+
+2. Cài đặt dependencies:
+   ```bash
+   flutter pub get
+   ```
+
+3. Chạy ứng dụng:
+   ```bash
+   flutter run
+   ```
+
+## 📁 Cấu trúc dự án
+
+```
+lib/
+├── main.dart                 # Điểm vào ứng dụng
+├── models/
+│   └── food_item.dart        # Model cho món ăn
+├── screens/
+│   ├── dashboard_screen.dart # Màn hình chính
+│   ├── camera_screen.dart    # Màn hình chụp ảnh
+│   ├── history_screen.dart   # Lịch sử bữa ăn
+│   ├── fitness_screen.dart   # Theo dõi vận động
+│   └── profile_screen.dart   # Hồ sơ cá nhân
+└── services/
+    └── gemini_service.dart   # Tích hợp AI Gemini
+```
+
+## 🔑 API Keys
+
+Ứng dụng sử dụng Google Gemini API. Để chạy đầy đủ tính năng AI, cần cấu hình API key trong `lib/services/gemini_service.dart`.
+
+## 📈 Screenshots
+
+*(Thêm hình ảnh demo ứng dụng ở đây)*
+
+## 🤝 Đóng góp
+
+Chúng tôi hoan nghênh mọi đóng góp! Vui lòng tạo issue hoặc pull request.
+
+## 📄 Giấy phép
+
+Dự án này được phân phối dưới giấy phép MIT.
+
+---
+
+*Ứng dụng được phát triển trong khuôn khổ dự án học thuật, tập trung vào việc ứng dụng AI vào chăm sóc sức khỏe dinh dưỡng cho người Việt Nam.*

@@ -34,22 +34,3 @@ app.post('/analyze-food', upload.single('image'), async (req, res) => {
                 mimeType: req.file.mimetype
             }
         };
-
-        const prompt = "Đây là món ăn gì của Việt Nam? Phân tích và trả về JSON chuẩn gồm: dish_name (string), components (array of string), weight_g (number), calories (number).";
-
-        const result = await model.generateContent([prompt, imagePart]);
-        const response = await result.response;
-        const text = response.text();
-
-        console.log("✅ Phân tích thành công!");
-        res.send(text);
-    } catch (error) {
-        console.error("❌ Lỗi:", error.message);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`🚀 Demo đang sẵn sàng tại: http://localhost:${PORT}`);
-});
